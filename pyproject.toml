@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "navi_lstm"
+version = "1.0.0"
+authors = [
+  { name="Pierre Poitier", email="pierre.poitier@unamur.be" },
+  { name="Robin GHYSELINCK", email="robin.ghyselinck@unamur.be" },
+]
+description = "Private repo for Navi Deep Learning Project."
+readme = "README.md"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "pandas",
+    "wandb",
+    "torch",
+    "torchvision",
+]
