@@ -11,18 +11,25 @@ class Utils:
         self.all_grid_params = None
         self.snapshot_dir = snapshot_dir
 
-    def get_all_grid_params(self):
-        param_grid = {
+    def get_all_grid_params(self, model_type):
+        # Common grid search parameters
+        param_grid: dict = {
             'learning_rate': [1e-3],
             'batch_size': [8],
             'hidden_size': [64],
-            'n_layers': [1],
             'epochs': [50],
-            'window_size': [150],
-            'window_overlap': [0.20],
             'optimizer': ['AdamW'],
             'scheduler': ['Plateau']
         }
+        if model_type == 'gru':
+            param_grid.update({
+                "context_size": [5],
+                "n_layers": [1]
+            })
+        if model_type == 'fc':
+            param_grid.update({
+                "context_size": [0],
+            })
 
         self.all_grid_params = [dict(zip(param_grid.keys(), v)) for v in product(*param_grid.values())]
 

@@ -2,7 +2,7 @@ from torch import nn
 
 
 class ResNet50GRU(nn.Module):
-    def __init__(self, input_size: int, hidden_size: int, n_layers: int):
+    def __init__(self, input_size: int, hidden_size: int, n_layers: int, dropout=0.3):
         super().__init__()
         self.rnn = nn.GRU(
             input_size,
@@ -11,13 +11,14 @@ class ResNet50GRU(nn.Module):
             num_layers=n_layers,
             bidirectional=False,
         )
+        self.dropout = nn.Dropout(dropout)
         self.fc = nn.Linear(hidden_size, 1)
 
     def forward(self, x):
         # X: (B, T, F_in) -> (B, T, H)
         outs, _ = self.rnn(x)
         # X: (B, T, H) -> (B, T, 1)
-        outs = self.fc(outs)
+        outs = self.fc(outs[:, -1])
         return outs
 
 

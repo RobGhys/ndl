@@ -21,6 +21,7 @@ class SequenceToSequenceTrainer:
             criterion: nn.Module,
             optimizer: optim.Optimizer,
             fold_nb: int,
+            model_type: str = 'gru',
             lr_scheduler: Optional[lr_scheduler] = None,
             device: str = 'cuda',
             gradient_clipping: bool = False,
@@ -31,6 +32,7 @@ class SequenceToSequenceTrainer:
         self.name = name
         self.fold_nb = fold_nb
         self.model = model.to(device)
+        self.model_type = model_type
         self.criterion = criterion.to(device)
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
@@ -67,9 +69,11 @@ class SequenceToSequenceTrainer:
         with grad_context():
             for b_index, (features, targets) in progress_bar:
                 features = features.to(self.device)
+                if self.model_type == 'fc':
+                    features = features[:, -1, :]
                 targets = targets.to(self.device)
                 logits = self.model(features).squeeze(dim=-1)
-                loss = self.criterion(logits, targets)
+                loss = self.criterion(logits, targets.float())
                 losses.append(loss.item())
 
                 if mode == 'train':
@@ -89,12 +93,12 @@ class SequenceToSequenceTrainer:
         true_labels = np.stack(true_labels).reshape(-1)
         predicted_labels = np.stack(predicted_labels).reshape(-1)
         bal_acc = balanced_accuracy_score(true_labels, predicted_labels)
-        #print(f'\nbalanced accuracy: {bal_acc}')
+        print(f'\nbalanced accuracy: {bal_acc}')
         recall = recall_score(true_labels, predicted_labels)
         precision = precision_score(true_labels, predicted_labels)
 
         accuracy = n_correct / n_total
-        #print(f'\nacc: {accuracy}')
+        print(f'\nacc: {accuracy}')
         mean_loss = np.mean(losses)
 
         target_metric = self.get_target_metric(accuracy, bal_acc)  # metric to track
@@ -142,8 +146,7 @@ class SequenceToSequenceTrainer:
         if self.best_weights is not None and self.snapshot_dir:
             self.save_weights('best')
 
-        return  self.best_metric
-        #return self.best_weights
+        return self.best_metric
 
     def save_weights(self, suffix: str):
         dest_path = f"{self.snapshot_dir}/fold_{self.fold_nb}"

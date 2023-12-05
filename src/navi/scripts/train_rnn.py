@@ -32,6 +32,7 @@ def load_metadata(video_csv_path: str, label_map_path: str):
 def launch_experiment(
         topmodel_name,
         embeddings_dir,
+        embeddings_size,
         video_csv,
         label_map,
         snapshot_dir,
@@ -52,7 +53,7 @@ def launch_experiment(
     logger = logging.getLogger()
     utils = Utils(snapshot_dir)
     k_fold = KFold(n_splits=n_splits, shuffle=True, random_state=seed)
-    params = utils.get_all_grid_params()
+    params = utils.get_all_grid_params(model_type)
     utils.log_params()  # add csv file with all combinations and their key
 
     wandb.init(
@@ -96,20 +97,20 @@ def launch_experiment(
                     datasets['test'], batch_size=grid_param['batch_size'], shuffle=False, drop_last=True)
             }
 
-            # pos_weight = compute_positive_weight(datasets['train'])
-            # pos_weight = torch.tensor(pos_weight).to(device)
-
             if model_type == 'gru':
                 model = ResNet50GRU(
-                    input_size=2048,
+                    input_size=embeddings_size,
                     hidden_size=grid_param['hidden_size'],
                     n_layers=grid_param['n_layers'],
                 )
             elif model_type == 'fc':
                 model = ResNet50FC(
-                    input_size=2048,
+                    input_size=embeddings_size,
                     hidden_size=grid_param['hidden_size'],
                 )
+            # todo take code from navi_deep
+            elif model_type == 'resnet':
+                ...
             else:
                 raise ValueError(f"Unknown model type: {model_type}.")
 
@@ -122,7 +123,9 @@ def launch_experiment(
                 gradient_clipping=True,
                 snapshot_dir=split_path,
                 fold_nb=idx,
+                model_type=model_type,
                 snapshot_interval=snapshot_interval,
+                tracked_metric='balanced_accuracy'
             )
             trainer.use_wandb = True
 
@@ -155,11 +158,12 @@ def launch_experiment(
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
-        prog="Navi training with GRU and embeddings.",
+        prog="Navi Deep Learning training.",
         description="/",
     )
     parser.add_argument('--topmodel-name', required=True)
     parser.add_argument('--embeddings-dir', required=True)
+    parser.add_argument('--embeddings-size', default=2048, type=int)
     parser.add_argument('--video-csv', required=True)
     parser.add_argument('--label-map', required=True)
     parser.add_argument('--snapshot-dir', required=True)
